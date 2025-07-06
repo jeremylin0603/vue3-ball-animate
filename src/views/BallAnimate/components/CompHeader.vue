@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
+import mockData from '../mock-data'
+import SidebarItem from './SidebarItem.vue'
 
 const elemHamburger = useTemplateRef('elemHamburger')
 const elemSidebar = useTemplateRef('elemSidebar')
@@ -30,11 +32,7 @@ function toggleSidebar() {
     </button>
 
     <div ref="elemSidebar" class="sidebar" :class="{ 'open': isSidebarOpen }">
-      <ul>
-        <li>
-          item
-        </li>
-      </ul>
+      <SidebarItem v-for="item in mockData" :key="item.key" :item="item" />
     </div>
   </div>
 </template>
@@ -76,6 +74,8 @@ function toggleSidebar() {
   top: 0;
   right: 0;
   z-index: 100;
+  padding: 10px;
+  overflow-y: auto;
   transform: translateX(100%);
   transition: transform 0.15s ease-in-out;
   background-color: rgba(0, 0, 0, 0.9);
@@ -84,16 +84,5 @@ function toggleSidebar() {
 
 .sidebar.open {
   transform: translateX(0);
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar ul li {
-  padding: 10px;
-  border-bottom: 1px solid #000;
 }
 </style>
