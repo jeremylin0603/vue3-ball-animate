@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { ref, useTemplateRef, provide, readonly, type Ref } from 'vue'
 import mockData from '../mock-data'
 import SidebarItem from './SidebarItem.vue'
 
@@ -20,6 +20,56 @@ onClickOutside(elemSidebar,
 
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value
+  if (isSidebarOpen.value) {
+    currentSelectedList.value = null
+    currentSelectedItem.value = null
+  }
+}
+
+const currentSelectedList = ref<Array<{ key: string, text: string }> | null>(null)
+const currentSelectedItem = ref<{ key: string, text: string } | null>(null)
+
+function handleSelect(payload: { key: string, text: string, depth: number, isLast?: boolean }) {
+  const { key, text, depth, isLast = false } = payload
+
+  // 若為最後一層則更新目標 item
+  if (isLast) {
+    currentSelectedItem.value = { key, text }
+  } else {
+    currentSelectedItem.value = null
+  }
+
+  if (currentSelectedList.value === null)
+    currentSelectedList.value = []
+
+  const currentDepth = currentSelectedList.value[depth]
+
+  // 當前深度為空表示直接展開
+  if (currentDepth === undefined) {
+    currentSelectedList.value.push({ key, text })
+    return
+  }
+
+  // 當前深度有值且選中相同項目則收起當前深度以下的所有項目
+  if (currentDepth.key === key && !isLast) {
+    currentSelectedList.value.splice(depth)
+    return
+  }
+
+  // 當前深度有值且選中不同項目則更新
+  currentSelectedList.value[depth] = { key, text }
+}
+
+provide('currentSelected', {
+  currentSelectedList: readonly(currentSelectedList),
+  currentSelectedItem: readonly(currentSelectedItem),
+  handleSelect
+})
+
+export interface InjectedCurrentSelected {
+  currentSelectedList: Readonly<Ref<Array<{ key: string, text: string }> | null>>
+  currentSelectedItem: Readonly<Ref<{ key: string, text: string } | null>>
+  handleSelect: (payload: { key: string, text: string, depth: number, isLast?: boolean }) => void
 }
 </script>
 
@@ -30,9 +80,8 @@ function toggleSidebar() {
       <div class="line"></div>
       <div class="line"></div>
     </button>
-
     <div ref="elemSidebar" class="sidebar" :class="{ 'open': isSidebarOpen }">
-      <SidebarItem v-for="item in mockData" :key="item.key" :item="item" />
+      <SidebarItem v-for="item in mockData" :key="item.key" :item="item" :depth="0" />
     </div>
   </div>
 </template>
